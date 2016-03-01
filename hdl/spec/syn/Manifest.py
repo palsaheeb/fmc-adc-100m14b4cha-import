@@ -23,7 +23,8 @@ modules = { "local" : ["../rtl",
                        "../../ip_cores/timetag_core/rtl"],
             "git" : ["git://ohwr.org/hdl-core-lib/general-cores.git@@c26ee857158e4a65fd9d2add8b63fcb6fb4691ea",
                      "git://ohwr.org/hdl-core-lib/ddr3-sp6-core.git@@16e3573085718fc728003b632cd9f0e28540d130",
-                     "git://ohwr.org/hdl-core-lib/gn4124-core.git@@e0dcb3f9a3e6804f64c544743bdf46b5fcbbefab"]}
+                     "git://ohwr.org/hdl-core-lib/gn4124-core.git@@e0dcb3f9a3e6804f64c544743bdf46b5fcbbefab",
+                     "git://ohwr.org/hdl-core-lib/wr-cores.git@@f3437dd82dd2267c63f3df341daac8972184cd9e"]}
 
 fetchto="../../ip_cores"
 
