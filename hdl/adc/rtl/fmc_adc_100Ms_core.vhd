@@ -9,7 +9,7 @@
 --              Dimitrios Lampridis  <dimitrios.lampridis@cern.ch>
 -- Company    : CERN (BE-CO-HT)
 -- Created    : 2011-02-24
--- Last update: 2016-06-08
+-- Last update: 2016-06-23
 -- Standard   : VHDL'93/02
 -------------------------------------------------------------------------------
 -- Description: FMC ADC 100Ms/s core.
@@ -49,7 +49,7 @@ library work;
 use work.timetag_core_pkg.all;
 use work.genram_pkg.all;
 use work.gencores_pkg.all;
-
+use work.fmc_adc_100Ms_csr_wbgen2_pkg.all;
 
 entity fmc_adc_100Ms_core is
   generic(
@@ -88,8 +88,9 @@ entity fmc_adc_100Ms_core is
     acq_stop_p_o  : out std_logic;
     acq_end_p_o   : out std_logic;
 
-    -- Trigger time-tag input
-    trigger_tag_i : t_timetag;
+    -- Trigger time-tag inputs
+    trigger_tag_i : in t_timetag;
+    time_trig_i   : in std_logic;
 
     -- FMC interface
     ext_trigger_p_i : in std_logic;               -- External trigger
@@ -148,93 +149,23 @@ architecture rtl of fmc_adc_100Ms_core is
         );
   end component adc_serdes;
 
-  component fmc_adc_100Ms_csr
+  component fmc_adc_100Ms_csr is
     port (
-      rst_n_i                                     : in  std_logic;
-      clk_sys_i                                   : in  std_logic;
-      wb_adr_i                                    : in  std_logic_vector(5 downto 0);
-      wb_dat_i                                    : in  std_logic_vector(31 downto 0);
-      wb_dat_o                                    : out std_logic_vector(31 downto 0);
-      wb_cyc_i                                    : in  std_logic;
-      wb_sel_i                                    : in  std_logic_vector(3 downto 0);
-      wb_stb_i                                    : in  std_logic;
-      wb_we_i                                     : in  std_logic;
-      wb_ack_o                                    : out std_logic;
-      wb_stall_o                                  : out std_logic;
-      fs_clk_i                                    : in  std_logic;
-      fmc_adc_core_ctl_fsm_cmd_o                  : out std_logic_vector(1 downto 0);
-      fmc_adc_core_ctl_fsm_cmd_wr_o               : out std_logic;
-      fmc_adc_core_ctl_fmc_clk_oe_o               : out std_logic;
-      fmc_adc_core_ctl_offset_dac_clr_n_o         : out std_logic;
-      fmc_adc_core_ctl_man_bitslip_o              : out std_logic;
-      fmc_adc_core_ctl_test_data_en_o             : out std_logic;
-      fmc_adc_core_ctl_trig_led_o                 : out std_logic;
-      fmc_adc_core_ctl_acq_led_o                  : out std_logic;
-      fmc_adc_core_sta_fsm_i                      : in  std_logic_vector(2 downto 0);
-      fmc_adc_core_sta_serdes_pll_i               : in  std_logic;
-      fmc_adc_core_sta_serdes_synced_i            : in  std_logic;
-      fmc_adc_core_sta_acq_cfg_i                  : in  std_logic;
-      fmc_adc_core_trig_cfg_hw_trig_sel_o         : out std_logic;
-      fmc_adc_core_trig_cfg_hw_trig_pol_o         : out std_logic;
-      fmc_adc_core_trig_cfg_hw_trig_en_o          : out std_logic;
-      fmc_adc_core_trig_cfg_sw_trig_en_o          : out std_logic;
-      fmc_adc_core_trig_cfg_int_trig_sel_o        : out std_logic_vector(1 downto 0);
-      fmc_adc_core_trig_cfg_int_trig_test_en_o    : out std_logic;
-      fmc_adc_core_trig_cfg_reserved_o            : out std_logic;
-      fmc_adc_core_trig_cfg_int_trig_thres_filt_o : out std_logic_vector(7 downto 0);
-      fmc_adc_core_trig_cfg_int_trig_thres_o      : out std_logic_vector(15 downto 0);
-      fmc_adc_core_trig_dly_o                     : out std_logic_vector(31 downto 0);
-      fmc_adc_core_sw_trig_o                      : out std_logic_vector(31 downto 0);
-      fmc_adc_core_sw_trig_wr_o                   : out std_logic;
-      fmc_adc_core_shots_nb_o                     : out std_logic_vector(15 downto 0);
-      fmc_adc_core_shots_cnt_val_i                : in  std_logic_vector(15 downto 0);
-      fmc_adc_core_trig_pos_i                     : in  std_logic_vector(31 downto 0);
-      fmc_adc_core_fs_freq_i                      : in  std_logic_vector(31 downto 0);
-      fmc_adc_core_sr_undersample_o               : out std_logic_vector(31 downto 0);
-      fmc_adc_core_pre_samples_o                  : out std_logic_vector(31 downto 0);
-      fmc_adc_core_post_samples_o                 : out std_logic_vector(31 downto 0);
-      fmc_adc_core_samples_cnt_i                  : in  std_logic_vector(31 downto 0);
-      fmc_adc_core_ch1_ctl_ssr_o                  : out std_logic_vector(6 downto 0);
-      fmc_adc_core_ch1_sta_val_i                  : in  std_logic_vector(15 downto 0);
-      fmc_adc_core_ch1_gain_val_o                 : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch1_offset_val_o               : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch1_sat_val_o                  : out std_logic_vector(14 downto 0);
-      fmc_adc_core_ch2_ctl_ssr_o                  : out std_logic_vector(6 downto 0);
-      fmc_adc_core_ch2_sta_val_i                  : in  std_logic_vector(15 downto 0);
-      fmc_adc_core_ch2_gain_val_o                 : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch2_offset_val_o               : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch2_sat_val_o                  : out std_logic_vector(14 downto 0);
-      fmc_adc_core_ch3_ctl_ssr_o                  : out std_logic_vector(6 downto 0);
-      fmc_adc_core_ch3_sta_val_i                  : in  std_logic_vector(15 downto 0);
-      fmc_adc_core_ch3_gain_val_o                 : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch3_offset_val_o               : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch3_sat_val_o                  : out std_logic_vector(14 downto 0);
-      fmc_adc_core_ch4_ctl_ssr_o                  : out std_logic_vector(6 downto 0);
-      fmc_adc_core_ch4_sta_val_i                  : in  std_logic_vector(15 downto 0);
-      fmc_adc_core_ch4_gain_val_o                 : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch4_offset_val_o               : out std_logic_vector(15 downto 0);
-      fmc_adc_core_ch4_sat_val_o                  : out std_logic_vector(14 downto 0);
-      fmc_adc_core_multi_depth_i                  : in  std_logic_vector(31 downto 0));
+      rst_n_i    : in  std_logic;
+      clk_sys_i  : in  std_logic;
+      wb_adr_i   : in  std_logic_vector(5 downto 0);
+      wb_dat_i   : in  std_logic_vector(31 downto 0);
+      wb_dat_o   : out std_logic_vector(31 downto 0);
+      wb_cyc_i   : in  std_logic;
+      wb_sel_i   : in  std_logic_vector(3 downto 0);
+      wb_stb_i   : in  std_logic;
+      wb_we_i    : in  std_logic;
+      wb_ack_o   : out std_logic;
+      wb_stall_o : out std_logic;
+      fs_clk_i   : in  std_logic;
+      regs_i     : in  t_fmc_adc_100Ms_csr_in_registers;
+      regs_o     : out t_fmc_adc_100Ms_csr_out_registers);
   end component fmc_adc_100Ms_csr;
-
-  component ext_pulse_sync
-    generic(
-      g_MIN_PULSE_WIDTH : natural   := 2;         --! Minimum input pulse width
-      --! (in ns), must be >1 clk_i tick
-      g_CLK_FREQUENCY   : natural   := 40;        --! clk_i frequency (in MHz)
-      g_OUTPUT_POLARITY : std_logic := '1';       --! pulse_o polarity
-      --! (1=negative, 0=positive)
-      g_OUTPUT_RETRIG   : boolean   := FALSE;     --! Retriggerable output monostable
-      g_OUTPUT_LENGTH   : natural   := 1          --! pulse_o lenght (in clk_i ticks)
-      );
-    port (
-      rst_n_i          : in  std_logic;           --! Reset (active low)
-      clk_i            : in  std_logic;           --! Clock to synchronize pulse
-      input_polarity_i : in  std_logic;           --! Input pulse polarity (1=negative, 0=positive)
-      pulse_i          : in  std_logic;           --! Asynchronous input pulse
-      pulse_o          : out std_logic            --! Synchronized output pulse
-      );
-  end component ext_pulse_sync;
 
   component offset_gain_s
     port (
@@ -247,23 +178,6 @@ architecture rtl of fmc_adc_100Ms_core is
       data_o   : out std_logic_vector(15 downto 0)   --! Signed data output (two's complement)
       );
   end component offset_gain_s;
-
-  component monostable
-    generic(
-      g_INPUT_POLARITY  : std_logic := '1';       --! trigger_i polarity
-      --! ('0'=negative, 1=positive)
-      g_OUTPUT_POLARITY : std_logic := '1';       --! pulse_o polarity
-      --! ('0'=negative, 1=positive)
-      g_OUTPUT_RETRIG   : boolean   := FALSE;     --! Retriggerable output monostable
-      g_OUTPUT_LENGTH   : natural   := 1          --! pulse_o lenght (in clk_i ticks)
-      );
-    port (
-      rst_n_i   : in  std_logic;                  --! Reset (active low)
-      clk_i     : in  std_logic;                  --! Clock
-      trigger_i : in  std_logic;                  --! Trigger input pulse
-      pulse_o   : out std_logic                   --! Monostable output pulse
-      );
-  end component monostable;
 
   ------------------------------------------------------------------------------
   -- Constants declaration
@@ -318,8 +232,9 @@ architecture rtl of fmc_adc_100Ms_core is
   signal bitslip_sreg        : std_logic_vector(7 downto 0);
 
   -- Trigger
-  signal ext_trig_a                 : std_logic;
-  signal ext_trig                   : std_logic;
+  signal ext_trig_a, ext_trig       : std_logic;
+  signal ext_trig_p, ext_trig_n     : std_logic;
+  signal time_trig                  : std_logic;
   signal int_trig                   : std_logic;
   signal int_trig_over_thres        : std_logic;
   signal int_trig_over_thres_d      : std_logic;
@@ -333,7 +248,7 @@ architecture rtl of fmc_adc_100Ms_core is
   signal hw_trig_pol                : std_logic;
   signal hw_trig                    : std_logic;
   signal hw_trig_t                  : std_logic;
-  signal hw_trig_sel                : std_logic;
+  signal hw_trig_sel                : std_logic_vector(1 downto 0);
   signal hw_trig_en                 : std_logic;
   signal sw_trig                    : std_logic;
   signal sw_trig_t                  : std_logic;
@@ -451,6 +366,10 @@ architecture rtl of fmc_adc_100Ms_core is
   -- Wishbone interface to DDR
   signal wb_ddr_stall_t : std_logic;
 
+  -- IO from CSR registers
+  signal csr_regin  : t_fmc_adc_100Ms_csr_in_registers;
+  signal csr_regout : t_fmc_adc_100Ms_csr_out_registers;
+
   -- LEDs
   signal trig_led     : std_logic;
   signal trig_led_man : std_logic;
@@ -463,35 +382,25 @@ begin
   ------------------------------------------------------------------------------
   -- LEDs
   ------------------------------------------------------------------------------
-  cmp_acq_led_monostable : monostable
-    generic map(
-      g_INPUT_POLARITY  => '1',
-      g_OUTPUT_POLARITY => '1',
-      g_OUTPUT_RETRIG   => TRUE,
-      g_OUTPUT_LENGTH   => 12500000
-      )
-    port map(
-      rst_n_i   => sys_rst_n_i,
-      clk_i     => sys_clk_i,
-      trigger_i => samples_wr_en,
-      pulse_o   => acq_led
-      );
+  cmp_acq_led: gc_extend_pulse
+    generic map (
+      g_width => 12500000)
+    port map (
+      clk_i      => sys_clk_i,
+      rst_n_i    => sys_rst_n_i,
+      pulse_i    => samples_wr_en,
+      extended_o => acq_led);
 
   gpio_led_acq_o <= acq_led or acq_led_man;
 
-  cmp_trig_led_monostable : monostable
-    generic map(
-      g_INPUT_POLARITY  => '1',
-      g_OUTPUT_POLARITY => '1',
-      g_OUTPUT_RETRIG   => TRUE,
-      g_OUTPUT_LENGTH   => 12500000
-      )
-    port map(
-      rst_n_i   => sys_rst_n_i,
-      clk_i     => sys_clk_i,
-      trigger_i => acq_trig,
-      pulse_o   => trig_led
-      );
+  cmp_trig_led: gc_extend_pulse
+    generic map (
+      g_width => 12500000)
+    port map (
+      clk_i      => sys_clk_i,
+      rst_n_i    => sys_rst_n_i,
+      pulse_i    => acq_trig,
+      extended_o => trig_led);
 
   gpio_led_trig_o <= trig_led or trig_led_man;
 
@@ -727,72 +636,70 @@ begin
   ------------------------------------------------------------------------------
   cmp_fmc_adc_100Ms_csr : fmc_adc_100Ms_csr
     port map(
-      rst_n_i                                     => sys_rst_n_i,
-      clk_sys_i                                   => sys_clk_i,
-      wb_adr_i                                    => wb_csr_adr_i,
-      wb_dat_i                                    => wb_csr_dat_i,
-      wb_dat_o                                    => wb_csr_dat_o,
-      wb_cyc_i                                    => wb_csr_cyc_i,
-      wb_sel_i                                    => wb_csr_sel_i,
-      wb_stb_i                                    => wb_csr_stb_i,
-      wb_we_i                                     => wb_csr_we_i,
-      wb_ack_o                                    => wb_csr_ack_o,
-      wb_stall_o                                  => open,
-      fs_clk_i                                    => fs_clk,
-      fmc_adc_core_ctl_fsm_cmd_o                  => fsm_cmd,
-      fmc_adc_core_ctl_fsm_cmd_wr_o               => fsm_cmd_wr,
-      fmc_adc_core_ctl_fmc_clk_oe_o               => gpio_si570_oe_o,
-      fmc_adc_core_ctl_offset_dac_clr_n_o         => gpio_dac_clr_n_o,
-      fmc_adc_core_ctl_man_bitslip_o              => serdes_man_bitslip,
-      fmc_adc_core_ctl_test_data_en_o             => test_data_en,
-      fmc_adc_core_ctl_trig_led_o                 => trig_led_man,
-      fmc_adc_core_ctl_acq_led_o                  => acq_led_man,
-      fmc_adc_core_sta_fsm_i                      => acq_fsm_state,
-      fmc_adc_core_sta_serdes_pll_i               => locked_out,
-      fmc_adc_core_sta_serdes_synced_i            => serdes_synced,
-      fmc_adc_core_sta_acq_cfg_i                  => acq_config_ok,
-      fmc_adc_core_trig_cfg_hw_trig_sel_o         => hw_trig_sel,
-      fmc_adc_core_trig_cfg_hw_trig_pol_o         => hw_trig_pol,
-      fmc_adc_core_trig_cfg_hw_trig_en_o          => hw_trig_en,
-      fmc_adc_core_trig_cfg_sw_trig_en_o          => sw_trig_en,
-      fmc_adc_core_trig_cfg_int_trig_sel_o        => int_trig_sel,
-      fmc_adc_core_trig_cfg_int_trig_test_en_o    => int_trig_test_en,
-      fmc_adc_core_trig_cfg_reserved_o            => open,
-      fmc_adc_core_trig_cfg_int_trig_thres_filt_o => int_trig_thres_filt,
-      fmc_adc_core_trig_cfg_int_trig_thres_o      => int_trig_thres,
-      fmc_adc_core_trig_dly_o                     => trig_delay,
-      fmc_adc_core_sw_trig_o                      => open,
-      fmc_adc_core_sw_trig_wr_o                   => sw_trig_t,
-      fmc_adc_core_shots_nb_o                     => shots_value,
-      fmc_adc_core_shots_cnt_val_i                => remaining_shots,
-      fmc_adc_core_trig_pos_i                     => trig_addr,
-      fmc_adc_core_fs_freq_i                      => fs_freq,
-      fmc_adc_core_sr_undersample_o               => undersample_factor,
-      fmc_adc_core_pre_samples_o                  => pre_trig_value,
-      fmc_adc_core_post_samples_o                 => post_trig_value,
-      fmc_adc_core_samples_cnt_i                  => std_logic_vector(samples_cnt),
-      fmc_adc_core_ch1_ctl_ssr_o                  => gpio_ssr_ch1_o,
-      fmc_adc_core_ch1_sta_val_i                  => serdes_out_data(15 downto 0),
-      fmc_adc_core_ch1_gain_val_o                 => gain_calibr(15 downto 0),
-      fmc_adc_core_ch1_offset_val_o               => offset_calibr(15 downto 0),
-      fmc_adc_core_ch1_sat_val_o                  => sat_val(14 downto 0),
-      fmc_adc_core_ch2_ctl_ssr_o                  => gpio_ssr_ch2_o,
-      fmc_adc_core_ch2_sta_val_i                  => serdes_out_data(31 downto 16),
-      fmc_adc_core_ch2_gain_val_o                 => gain_calibr(31 downto 16),
-      fmc_adc_core_ch2_offset_val_o               => offset_calibr(31 downto 16),
-      fmc_adc_core_ch2_sat_val_o                  => sat_val(29 downto 15),
-      fmc_adc_core_ch3_ctl_ssr_o                  => gpio_ssr_ch3_o,
-      fmc_adc_core_ch3_sta_val_i                  => serdes_out_data(47 downto 32),
-      fmc_adc_core_ch3_gain_val_o                 => gain_calibr(47 downto 32),
-      fmc_adc_core_ch3_offset_val_o               => offset_calibr(47 downto 32),
-      fmc_adc_core_ch3_sat_val_o                  => sat_val(44 downto 30),
-      fmc_adc_core_ch4_ctl_ssr_o                  => gpio_ssr_ch4_o,
-      fmc_adc_core_ch4_sta_val_i                  => serdes_out_data(63 downto 48),
-      fmc_adc_core_ch4_gain_val_o                 => gain_calibr(63 downto 48),
-      fmc_adc_core_ch4_offset_val_o               => offset_calibr(63 downto 48),
-      fmc_adc_core_ch4_sat_val_o                  => sat_val(59 downto 45),
-      fmc_adc_core_multi_depth_i                  => c_MULTISHOT_SAMPLE_DEPTH
-      );
+      rst_n_i    => sys_rst_n_i,
+      clk_sys_i  => sys_clk_i,
+      wb_adr_i   => wb_csr_adr_i,
+      wb_dat_i   => wb_csr_dat_i,
+      wb_dat_o   => wb_csr_dat_o,
+      wb_cyc_i   => wb_csr_cyc_i,
+      wb_sel_i   => wb_csr_sel_i,
+      wb_stb_i   => wb_csr_stb_i,
+      wb_we_i    => wb_csr_we_i,
+      wb_ack_o   => wb_csr_ack_o,
+      wb_stall_o => open,
+      fs_clk_i   => fs_clk,
+      regs_i     => csr_regin,
+      regs_o     => csr_regout);
+
+  csr_regin.sta_fsm_i           <= acq_fsm_state;
+  csr_regin.sta_serdes_pll_i    <= locked_out;
+  csr_regin.sta_serdes_synced_i <= serdes_synced;
+  csr_regin.sta_acq_cfg_i       <= acq_config_ok;
+  csr_regin.shots_cnt_val_i     <= remaining_shots;
+  csr_regin.trig_pos_i          <= trig_addr;
+  csr_regin.fs_freq_i           <= fs_freq;
+  csr_regin.samples_cnt_i       <= std_logic_vector(samples_cnt);
+  csr_regin.ch1_sta_val_i       <= serdes_out_data(15 downto 0);
+  csr_regin.ch2_sta_val_i       <= serdes_out_data(31 downto 16);
+  csr_regin.ch3_sta_val_i       <= serdes_out_data(47 downto 32);
+  csr_regin.ch4_sta_val_i       <= serdes_out_data(63 downto 48);
+  csr_regin.multi_depth_i       <= c_MULTISHOT_SAMPLE_DEPTH;
+
+  fsm_cmd             <= csr_regout.ctl_fsm_cmd_o;
+  fsm_cmd_wr          <= csr_regout.ctl_fsm_cmd_wr_o;
+  gpio_si570_oe_o     <= csr_regout.ctl_fmc_clk_oe_o;
+  gpio_dac_clr_n_o    <= csr_regout.ctl_offset_dac_clr_n_o;
+  serdes_man_bitslip  <= csr_regout.ctl_man_bitslip_o;
+  test_data_en        <= csr_regout.ctl_test_data_en_o;
+  trig_led_man        <= csr_regout.ctl_trig_led_o;
+  acq_led_man         <= csr_regout.ctl_acq_led_o;
+  hw_trig_sel         <= csr_regout.trig_cfg_hw_trig_sel_o;
+  hw_trig_pol         <= csr_regout.trig_cfg_hw_trig_pol_o;
+  hw_trig_en          <= csr_regout.trig_cfg_hw_trig_en_o;
+  sw_trig_en          <= csr_regout.trig_cfg_sw_trig_en_o;
+  int_trig_sel        <= csr_regout.trig_cfg_int_trig_sel_o;
+  int_trig_test_en    <= csr_regout.trig_cfg_int_trig_test_en_o;
+  int_trig_thres_filt <= csr_regout.trig_cfg_int_trig_thres_filt_o;
+  int_trig_thres      <= csr_regout.trig_cfg_int_trig_thres_o;
+  trig_delay          <= csr_regout.trig_dly_o;
+  sw_trig_t           <= csr_regout.sw_trig_wr_o;
+  shots_value         <= csr_regout.shots_nb_o;
+  undersample_factor  <= csr_regout.sr_undersample_o;
+  pre_trig_value      <= csr_regout.pre_samples_o;
+  post_trig_value     <= csr_regout.post_samples_o;
+  gpio_ssr_ch1_o      <= csr_regout.ch1_ctl_ssr_o;
+  gpio_ssr_ch2_o      <= csr_regout.ch2_ctl_ssr_o;
+  gpio_ssr_ch3_o      <= csr_regout.ch3_ctl_ssr_o;
+  gpio_ssr_ch4_o      <= csr_regout.ch4_ctl_ssr_o;
+
+  gain_calibr <= csr_regout.ch4_gain_val_o & csr_regout.ch3_gain_val_o &
+                 csr_regout.ch2_gain_val_o & csr_regout.ch1_gain_val_o;
+
+  offset_calibr <= csr_regout.ch4_offset_val_o & csr_regout.ch3_offset_val_o &
+                   csr_regout.ch2_offset_val_o & csr_regout.ch1_offset_val_o;
+
+  sat_val <= csr_regout.ch4_sat_val_o & csr_regout.ch3_sat_val_o &
+             csr_regout.ch2_sat_val_o & csr_regout.ch1_sat_val_o;
 
   ------------------------------------------------------------------------------
   -- Offset and gain calibration
@@ -825,21 +732,31 @@ begin
       );
 
   -- External hardware trigger synchronization
-  cmp_trig_sync : ext_pulse_sync
-    generic map(
-      g_MIN_PULSE_WIDTH => 1,                     -- clk_i ticks
-      g_CLK_FREQUENCY   => 100,                   -- MHz
-      g_OUTPUT_POLARITY => '0',                   -- positive pulse
-      g_OUTPUT_RETRIG   => FALSE,
-      g_OUTPUT_LENGTH   => 1                      -- clk_i tick
-      )
-    port map(
-      rst_n_i          => fs_rst_n,
-      clk_i            => fs_clk,
-      input_polarity_i => hw_trig_pol,
-      pulse_i          => ext_trig_a,
-      pulse_o          => ext_trig
-      );
+  cmp_ext_trig_sync : gc_sync_ffs
+    port map (
+      clk_i    => fs_clk,
+      rst_n_i  => fs_rst_n,
+      data_i   => ext_trig_a,
+      synced_o => open,
+      npulse_o => ext_trig_n,
+      ppulse_o => ext_trig_p);
+
+  -- select external trigger pulse polarity
+  with hw_trig_pol select
+    ext_trig <=
+    ext_trig_p when '0',
+    ext_trig_n when '1',
+    '0'        when others;
+
+  -- Time trigger synchronization (from 125MHz timetag core)
+  cmp_time_trig_sync : gc_sync_ffs
+    port map (
+      clk_i    => fs_clk,
+      rst_n_i  => fs_rst_n,
+      data_i   => time_trig_i,
+      synced_o => open,
+      npulse_o => open,
+      ppulse_o => time_trig);
 
   -- Internal hardware trigger
   int_trig_data <= data_calibr_out(15 downto 0) when int_trig_sel = "00" else   -- CH1 selected
@@ -889,9 +806,16 @@ begin
               not(int_trig_over_thres_filt) and int_trig_over_thres_filt_d;  -- negative slope
 
   -- Hardware trigger selection
-  --    internal = adc data threshold
-  --    external = pulse from front panel
-  hw_trig_t <= ext_trig when hw_trig_sel = '1' else int_trig;
+  --    00: internal = adc data threshold
+  --    01: external = pulse from front panel
+  --    10: time     = time trigger
+  --    11: reserved = (for WR message-based interrupts)
+  with hw_trig_sel select
+    hw_trig_t <=
+    int_trig  when "00",
+    ext_trig  when "01",
+    time_trig when "10",
+    '0'       when others;
 
   -- Hardware trigger enable
   hw_trig <= hw_trig_t and hw_trig_en;
@@ -1047,7 +971,7 @@ begin
                     trig_tst & int_trig_over_thres_filt_tst &
                     int_trig_over_thres_tst &
                     data_calibr_out_d(3)(15 downto 0)) when int_trig_test_en = '1' else
-                   (trig_align & data_calibr_out_d(3)) when hw_trig_sel = '0' else
+                   (trig_align & data_calibr_out_d(3)) when hw_trig_sel = "00" else
                    (trig_align & data_calibr_out);
 
   -- FOR DEBUG: FR instead of CH1 and SerDes Synced instead of CH2
